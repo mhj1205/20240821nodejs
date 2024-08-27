@@ -1,6 +1,6 @@
 const { MongoClient } = require('mongodb');
 // MongoDB Atalas 네트워크 접속
-const uri = "mongodb+srv://comstudynews:12345@cluster0.vu3uh.mongodb.net/myDatabase";
+const uri = "mongodb+srv://lightnow1205:12345@cluster0.vu3uh.mongodb.net/myDatabase";
 const client = new MongoClient(uri);
 async function run() {
   try {
