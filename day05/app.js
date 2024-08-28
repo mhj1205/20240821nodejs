@@ -179,6 +179,7 @@ router.route("/gallery").get((req,res)=> {
         res.end(html);
     });
 });
+
 // ---- 쇼핑몰 기능
 router.route("/shop").get((req,res)=> {
     req.app.render("shop/Shop", {carList}, (err, html)=>{
@@ -252,6 +253,48 @@ router.route("/shop/cart").get((req,res)=> {
         res.end(html);
     });
 });
+//----쇼핑몰 기능 끝
+
+//----TodoList 기능 시작
+// HTML 폼에서 REST method은 GET과 POST만 사용 가능.
+// Ajax를 사용하지 않기 때문에 GET과 POST만 처리 가능.
+// app.get()은 ejs 뷰로 forward 시켜주기
+// app.post()은 DB와 연동해서 처리하는 process역할
+// forward란, 주소의 내용이 아닌 다른 파일의 내용 표시하는 것.
+const todoList = [
+    {_id:101, title:"밥먹기", done:false},
+    {_id:102, title:"잠자기", done:false},
+    {_id:103, title:"공부하기", done:false},
+    {_id:104, title:"친구랑 놀기", done:false},
+];
+let todoCnt = 105;
+
+app.get("/todo/list", (req,res)=>{
+    res.render("todolist/TodoList", {todoList});
+});
+app.get("/todo/input", (req,res)=>{
+    res.render("todolist/TodoInput", {});
+});
+app.get("/todo/detail", (req,res)=>{
+    res.render("todolist/TodoDetail", {});
+});
+app.get("/todo/modify", (req,res)=>{
+    res.render("todolist/TodoModify", {});
+});
+// 저장 처리 - 몽고디비와 연동
+app.post("/todo/input", (req,res)=>{
+    res.redirect("/todo/list");
+});
+app.post("/todo/detail", (req,res)=>{
+    res.redirect("/todo/list");
+});
+app.post("/todo/modify", (req,res)=>{
+    res.redirect("/todo/list");
+});
+app.get("/todo/delete", (req,res)=>{
+    res.redirect("/todo/list");
+});
+//----TodoList 기능 끝
 
 // router 설정 맨 아래에 미들웨어 등록
 app.use('/', router);
