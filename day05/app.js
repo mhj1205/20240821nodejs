@@ -261,16 +261,36 @@ router.route("/shop/cart").get((req,res)=> {
 // app.get()은 ejs 뷰로 forward 시켜주기
 // app.post()은 DB와 연동해서 처리하는 process역할
 // forward란, 주소의 내용이 아닌 다른 파일의 내용 표시하는 것.
-const todoList = [
-    {_id:101, title:"밥먹기", done:false},
-    {_id:102, title:"잠자기", done:false},
-    {_id:103, title:"공부하기", done:false},
-    {_id:104, title:"친구랑 놀기", done:false},
-];
-let todoCnt = 105;
+const { MongoClient, ObjectId } = require("mongodb");
 
-app.get("/todo/list", (req,res)=>{
-    res.render("todolist/TodoList", {todoList});
+const client = new MongoClient("mongodb://localhost:27017");
+const dbName = "comstudy";
+const collectionName = "todolist";
+
+
+app.get("/todo/list", async (req,res)=>{
+    //res.render("todolist/TodoList", {todoList});
+    try {
+        await client.connect();
+        const database = client.db(dbName);
+        const todoCollection = database.collection(collectionName);
+        const QUERY = {};
+        const cursor = todoCollection.find(QUERY, {});
+        if ((await todoCollection.countDocuments(QUERY)) === 0) {
+          console.log("No documents found!");
+        }
+
+        const todoList = [];
+        for await (const doc of cursor) {
+            todoList.push(doc);
+        }
+        req.app.render("todolist/TodoList", {todoList}, (err, html)=>{
+            if(err) throw err;
+            res.end(html);
+        });
+      } finally {
+        await client.close();
+      }    
 });
 app.get("/todo/input", (req,res)=>{
     res.render("todolist/TodoInput", {});
@@ -278,20 +298,77 @@ app.get("/todo/input", (req,res)=>{
 app.get("/todo/detail", (req,res)=>{
     res.render("todolist/TodoDetail", {});
 });
-app.get("/todo/modify", (req,res)=>{
-    res.render("todolist/TodoModify", {});
+app.get("/todo/modify", async (req,res)=>{
+    try {
+        await client.connect();
+        const database = client.db(dbName);
+        const collection = database.collection(collectionName);
+
+        const query = { _id: new ObjectId(req.query._id) };
+        const fetch = await collection.findOne(query);
+        console.log("Fetched document:", fetch);
+        res.render("todolist/TodoModify", {todo: fetch});
+      } finally {
+        await client.close();
+      }
 });
 // 저장 처리 - 몽고디비와 연동
-app.post("/todo/input", (req,res)=>{
-    res.redirect("/todo/list");
+app.post("/todo/input", async (req,res)=>{
+    const doc = {
+        title: req.body.title,
+        done: (req.body.done=="true"?true:false)
+    }
+    try {
+        await client.connect();
+        const database = client.db(dbName);
+        const cars = database.collection(collectionName);
+        const result = await cars.insertOne(doc);
+        console.log(`A document was inserted with the _id: ${result.insertedId}`);
+        res.redirect("/todo/list");
+      } finally {
+        await client.close();
+      }
 });
 app.post("/todo/detail", (req,res)=>{
-    res.redirect("/todo/list");
+    res.redirect("/todolist/TodoDetail");
 });
-app.post("/todo/modify", (req,res)=>{
-    res.redirect("/todo/list");
+app.post("/todo/modify", async (req,res)=>{
+    console.log(req.body._id);
+    try {
+        await client.connect();
+        const database = client.db(dbName);
+        const movies = database.collection(collectionName);
+        const filter = { _id: new ObjectId(req.body._id) };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            title: req.body.title,
+            done: (req.body.done=="true"?true:false)
+          }
+        };// Update the first document that matches the filter
+        const result = await movies.updateOne(filter, updateDoc, options);
+        console.log(`${result.matchedCount} document(s) matched the filter, updated ${result.modifiedCount} document(s)`,);
+        res.redirect("/todo/list");
+    } finally {
+        await client.close();
+    }
 });
-app.get("/todo/delete", (req,res)=>{
+app.get("/todo/delete", async (req,res)=>{
+    try {
+        await client.connect();
+        const database = client.db(dbName);
+        const todos = database.collection(collectionName);
+        const query = { _id: new ObjectId(req.query._id) };
+        const result = await todos.deleteOne(query);
+        if (result.deletedCount === 1) {
+          console.log("Successfully deleted one document.");
+        } else {
+          console.log("No documents matched the query. Deleted 0 documents.");
+        }
+      } finally {
+        // Close the connection after the operation completes
+        await client.close();
+      }
     res.redirect("/todo/list");
 });
 //----TodoList 기능 끝
@@ -305,6 +382,7 @@ app.use('/', router);
 // });
 
 const expressErrorHandler = require('express-error-handler');
+const { title } = require("process");
 //모든 라우터 처리 후 404 오류 페이지 처리
 const errorHandler = expressErrorHandler({
     static : {

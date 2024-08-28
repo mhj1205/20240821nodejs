@@ -10,6 +10,26 @@
     <hr />
     <div class="container">
         <h2>Todo Input</h2>
+        <form action="/todo/input" method="post">
+            <table>
+                <tr>
+                    <td>할일:</td>
+                    <td><input type="text" name="title" value="새 할일"/> <br/></td>
+                </tr>
+                <tr>
+                    <td>확인:</td>
+                    <td><select name="done" id="done">
+                        <option value="false">미완료</option>
+                        <option value="true">완료</option>
+                    </select> <br/></td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <input type="submit" value="저장">
+                    </td>
+                </tr>
+            </table>
+        </form>
     </div>
 </body>
 </html>
